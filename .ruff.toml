@@ -12,6 +12,7 @@ ignore = [
     "ARG002",   # unused-method-argument
     "BLE001",   # blind-except
     "COM812",   # incompatible with formatter
+    "CPY001",   # missing-copyright-notice
     "D203",     # no-blank-line-before-class (incompatible with formatter)
     "D205",     # 1 blank line required between summary line and description
     "D212",     # multi-line-summary-first-line (incompatible with formatter)
@@ -30,6 +31,7 @@ ignore = [
     "PLR0912",  # too-many-branches
     "PLR0913",  # too-many-arguments
     "PLR0915",  # too-many-statements
+    "PLR0917",  # too-many-positional-arguments
     "PLR2004",  # magic-value-comparison (HTTP status codes are self-explanatory)
     "RUF059",   # unused-unpacked-variable (used with status, data pattern)
     "S101",     # assert
