@@ -11,6 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .api import GiraApiClient
 from .const import (
     DATA_API_CLIENT,
+    DATA_HUB_DEVICE_ID,
     DATA_LOCATION_MAP,
     DATA_UI_CONFIG,
     DP_ON_OFF,
@@ -37,6 +38,9 @@ async def async_setup_entry(
     location_map: dict[str, str] = hass.data[config_entry.domain][
         config_entry.entry_id
     ].get(DATA_LOCATION_MAP, {})
+    hub_device_id: str = hass.data[config_entry.domain][config_entry.entry_id][
+        DATA_HUB_DEVICE_ID
+    ]
 
     entities = []
     for function_data in ui_config.get("functions", []):
@@ -46,7 +50,13 @@ async def async_setup_entry(
         ):
             suggested_area = location_map.get(function_data.get("uid"))
             entities.append(
-                GiraSwitch(config_entry, api_client, function_data, suggested_area)
+                GiraSwitch(
+                    config_entry,
+                    api_client,
+                    function_data,
+                    hub_device_id,
+                    suggested_area,
+                )
             )
             _LOGGER.info(
                 "Adding Gira Switch: %s (UID: %s)",
@@ -64,10 +74,13 @@ class GiraSwitch(GiraOneEntity, SwitchEntity):
         config_entry: ConfigEntry,
         api_client: GiraApiClient,
         function_data: dict[str, Any],
+        hub_device_id: str,
         suggested_area: str | None = None,
     ) -> None:
         """Initialize the Gira Switch."""
-        super().__init__(config_entry, api_client, function_data, suggested_area)
+        super().__init__(
+            config_entry, api_client, function_data, hub_device_id, suggested_area
+        )
         self._attr_is_on = None
 
     async def _fetch_initial_state(self) -> None:

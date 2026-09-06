@@ -22,6 +22,7 @@ from .api import GiraApiClient, GiraApiClientError
 from .const import (
     CLIMATE,
     DATA_API_CLIENT,
+    DATA_HUB_DEVICE_ID,
     DATA_LOCATION_MAP,
     DATA_UI_CONFIG,
     DOMAIN,
@@ -49,6 +50,7 @@ async def async_setup_entry(
     api_client: GiraApiClient = entry_data[DATA_API_CLIENT]
     ui_config: dict[str, Any] = entry_data[DATA_UI_CONFIG]
     location_map: dict[str, str] = entry_data.get(DATA_LOCATION_MAP, {})
+    hub_device_id: str = entry_data[DATA_HUB_DEVICE_ID]
 
     entities: list[SensorEntity] = []
     for function_data in ui_config.get("functions", []):
@@ -72,6 +74,7 @@ async def async_setup_entry(
                     dp_uid=data_points[dp_name]["uid"],
                     translation_key=translation_key,
                     uid_suffix=uid_suffix,
+                    hub_device_id=hub_device_id,
                     suggested_area=suggested_area,
                 )
             )
@@ -102,6 +105,7 @@ class GiraTemperatureSensor(SensorEntity):
         dp_uid: str,
         translation_key: str,
         uid_suffix: str,
+        hub_device_id: str,
         suggested_area: str | None,
     ) -> None:
         """Initialize the temperature sensor."""
@@ -118,10 +122,9 @@ class GiraTemperatureSensor(SensorEntity):
             name=function_data.get("displayName"),
             manufacturer="Gira",
             model=function_data.get("functionType", "Unknown Gira Function"),
-            via_device=(
-                DOMAIN,
-                config_entry.unique_id or config_entry.data.get("host"),
-            ),
+            # 'via_device_id' replaces the deprecated identifier-based
+            # 'via_device' (deprecated since HA 2026.8).
+            via_device_id=hub_device_id,
         )
 
     async def async_added_to_hass(self) -> None:
