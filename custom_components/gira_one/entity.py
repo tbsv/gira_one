@@ -28,6 +28,7 @@ class GiraOneEntity(Entity, ABC):
         config_entry: ConfigEntry,
         api_client: GiraApiClient,
         function_data: dict[str, Any],
+        hub_device_id: str,
         suggested_area: str | None = None,
     ) -> None:
         """Initialize the base Gira One entity."""
@@ -48,11 +49,10 @@ class GiraOneEntity(Entity, ABC):
             name=self._display_name,
             manufacturer="Gira",
             model=function_data.get("functionType", "Unknown Gira Function"),
-            # 'via_device' links this functional device with the main server device (bridge).
-            via_device=(
-                DOMAIN,
-                config_entry.unique_id or config_entry.data.get("host"),
-            ),
+            # 'via_device_id' links this functional device with the main server
+            # device (bridge). The identifier-based 'via_device' is deprecated
+            # since HA 2026.8 because identifiers are only unique per config entry.
+            via_device_id=hub_device_id,
         )
 
         self._data_points: dict[str, dict[str, Any]] = {

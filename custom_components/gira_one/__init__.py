@@ -27,6 +27,7 @@ from .const import (
     CONF_PASSWORD,
     CONF_USERNAME,
     DATA_API_CLIENT,
+    DATA_HUB_DEVICE_ID,
     DATA_LOCATION_MAP,
     DATA_UI_CONFIG,
     DOMAIN,
@@ -141,14 +142,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # would start a spurious reauth flow.
     api_client.set_auth_error_callback(_handle_auth_error)
 
+    # The hub device must exist before any child device references it via
+    # 'via_device_id', so register it first and keep its registry id around.
+    hub_device_id = await _async_register_device(hass, entry, api_client)
+
     hass.data[DOMAIN][entry.entry_id] = {
         DATA_API_CLIENT: api_client,
         DATA_UI_CONFIG: ui_config,
         DATA_LOCATION_MAP: location_map,
+        DATA_HUB_DEVICE_ID: hub_device_id,
     }
 
-    # Register hub device and clean up orphaned entries for removed functions
-    await _async_register_device(hass, entry, api_client)
+    # Clean up orphaned entries for functions removed from the Gira project
     _async_cleanup_stale_devices(hass, entry, ui_config)
 
     # Set up platforms
@@ -176,8 +181,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def _async_register_device(
     hass: HomeAssistant, entry: ConfigEntry, api_client: GiraApiClient
-) -> None:
-    """Register the main Gira One hub device in the device registry."""
+) -> str:
+    """Register the main Gira One hub device and return its registry id."""
     try:
         server_details = await api_client.get_server_details()
     except GiraApiClientError as err:
@@ -185,7 +190,7 @@ async def _async_register_device(
         server_details = {}
 
     device_registry = dr.async_get(hass)
-    device_registry.async_get_or_create(
+    hub_device = device_registry.async_get_or_create(
         config_entry_id=entry.entry_id,
         identifiers={(DOMAIN, entry.unique_id or entry.data[CONF_HOST])},
         name=entry.title,
@@ -193,6 +198,7 @@ async def _async_register_device(
         model=server_details.get("deviceType", "Gira One Server"),
         sw_version=server_details.get("deviceVersion"),
     )
+    return hub_device.id
 
 
 @callback

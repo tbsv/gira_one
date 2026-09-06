@@ -23,6 +23,7 @@ from .api import GiraApiClient
 from .const import (
     CLIMATE,
     DATA_API_CLIENT,
+    DATA_HUB_DEVICE_ID,
     DATA_LOCATION_MAP,
     DATA_UI_CONFIG,
     DP_CURRENT_TEMP,
@@ -63,6 +64,9 @@ async def async_setup_entry(
     location_map = hass.data[config_entry.domain][config_entry.entry_id].get(
         DATA_LOCATION_MAP, {}
     )
+    hub_device_id: str = hass.data[config_entry.domain][config_entry.entry_id][
+        DATA_HUB_DEVICE_ID
+    ]
 
     entities = []
     for function_data in ui_config.get("functions", []):
@@ -72,7 +76,13 @@ async def async_setup_entry(
         ):
             suggested_area = location_map.get(function_data.get("uid"))
             entities.append(
-                GiraClimate(config_entry, api_client, function_data, suggested_area)
+                GiraClimate(
+                    config_entry,
+                    api_client,
+                    function_data,
+                    hub_device_id,
+                    suggested_area,
+                )
             )
             _LOGGER.info(
                 "Adding Gira Climate: %s (UID: %s)",
@@ -95,10 +105,13 @@ class GiraClimate(GiraOneEntity, ClimateEntity):
         config_entry: ConfigEntry,
         api_client: GiraApiClient,
         function_data: dict[str, Any],
+        hub_device_id: str,
         suggested_area: str | None = None,
     ) -> None:
         """Initialize the Gira Climate device."""
-        super().__init__(config_entry, api_client, function_data, suggested_area)
+        super().__init__(
+            config_entry, api_client, function_data, hub_device_id, suggested_area
+        )
 
         # Climate-specific attributes
         self._attr_current_temperature: float | None = None
